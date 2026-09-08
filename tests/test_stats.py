@@ -103,7 +103,15 @@ def test_svg_is_well_formed_xml():
     doc = svg.render(rows, tz_hours=2)
     root = ET.fromstring(doc)
     assert root.tag.endswith("svg")
-    assert "utc+2" in doc and "polyline" in doc
+    assert "utc+2" in doc and "polyline" in doc and "blob base fee" not in doc and "height='520'" in doc
+
+
+def test_svg_grows_a_blob_panel_when_the_rows_have_blob_fees():
+    rows = [BlockFee(number=r.number, timestamp=r.timestamp, base_fee_gwei=r.base_fee_gwei, gas_used_ratio=r.gas_used_ratio,
+                     blob_fee_gwei=0.001 + (r.number % 7) / 1000) for r in rows_for(30)]
+    doc = svg.render(rows)
+    ET.fromstring(doc)
+    assert "blob base fee" in doc and "height='640'" in doc and doc.count("<polyline") == 2
 
 
 def test_fetch_uses_pages_and_anchors(monkeypatch):
