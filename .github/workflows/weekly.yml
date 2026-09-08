@@ -1,0 +1,30 @@
+name: weekly report
+
+# monday morning: the last seven rows of data/daily.csv and the hour-of-day table from a fresh
+# run, posted as a discussion in "general". the numbers come from this repository's own code
+# and a public rpc; nothing is stored beyond the post. workflow_dispatch for a rerun by hand.
+
+on:
+  schedule:
+    - cron: "20 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  discussions: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet .
+      - name: the week, hour by hour
+        run: gasweek --tz +0 > report.txt || echo "" > report.txt
+      - name: post the discussion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python .github/scripts/weekly_report.py data/daily.csv report.txt

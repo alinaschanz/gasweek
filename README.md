@@ -113,6 +113,10 @@ blob fee. columns are described in [data/README.md](data/README.md). it starts o
 2026-09-08; if you want the same numbers for an older window, `gasweek --hours N
 --summary-append` reproduces a row from any node that still serves the history.
 
+every monday morning a workflow posts the week as a
+[discussion](https://github.com/alinaschanz/gasweek/discussions): the seven daily rows and the
+hour-of-day table from a fresh run. `.github/scripts/weekly_report.py` is the whole of it.
+
 ## see also
 
 - [onchain-notes](https://github.com/alinaschanz/onchain-notes): `gas_now.py`, the same fee market as a cost per action, right now

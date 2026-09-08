@@ -5,6 +5,8 @@ versions follow [semver](https://semver.org/) as far as a command line tool has 
 
 ## [unreleased]
 
+- a weekly report: the seven daily rows and a fresh hour-of-day table, posted as a discussion every monday
+
 - a pypi workflow: trusted publishing on a release, switched on by a repository variable
 
 - the chart grows a third panel with the blob base fee when the rows carry it
