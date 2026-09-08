@@ -5,6 +5,7 @@
 ![python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776ab)
 ![license mit](https://img.shields.io/badge/license-MIT-2b7a74)
 [![release](https://img.shields.io/github/v/release/alinaschanz/gasweek?color=2b7a74)](https://github.com/alinaschanz/gasweek/releases)
+[![openssf scorecard](https://api.scorecard.dev/projects/github.com/alinaschanz/gasweek/badge)](https://scorecard.dev/viewer/?uri=github.com/alinaschanz/gasweek)
 
 when is ethereum cheapest? the base fee of every block in the last week, binned by hour
 of day and by weekday, as a table and as an svg. from `eth_feeHistory` on a public rpc,
@@ -122,6 +123,20 @@ hour-of-day table from a fresh run. `.github/scripts/weekly_report.py` is the wh
 - [onchain-notes](https://github.com/alinaschanz/onchain-notes): `gas_now.py`, the same fee market as a cost per action, right now
 - [bigmoves](https://github.com/alinaschanz/bigmoves), [stablepeg](https://github.com/alinaschanz/stablepeg), [ens-lookup](https://github.com/alinaschanz/ens-lookup)
 - the notes: [alinaschanz.life](https://alinaschanz.life), the short version on [x](https://x.com/alinaschanz)
+
+## verify a release
+
+from the next release on, every release carries the sdist and the wheel, a `SHA256SUMS` file, an
+opentimestamps proof of that file, and a build provenance attestation made in github's own signing
+flow. with the files downloaded into one folder:
+
+    sha256sum -c SHA256SUMS
+    gh attestation verify ./*.whl --owner alinaschanz
+    ots verify SHA256SUMS.ots
+
+the attestation names the commit and the workflow run that produced the file; the timestamp proves
+the checksums existed before a certain bitcoin block; the commit itself is
+[signed](https://alinaschanz.life/verify/#commits).
 
 ## license
 
