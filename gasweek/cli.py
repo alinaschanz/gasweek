@@ -79,12 +79,17 @@ def append_summary(path: str, summary: dict) -> None:
         "gas_used_ratio_mean": f"{summary['gas_used_ratio_mean']:.4f}",
         "blob_median_gwei": "" if summary["blob_median"] is None else f"{summary['blob_median']:.6g}",
     }
-    new = not os.path.exists(path) or os.path.getsize(path) == 0
-    with open(path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=SUMMARY_FIELDS)
-        if new:
-            writer.writeheader()
-        writer.writerow(row)
+    rows: list[dict] = []
+    if os.path.exists(path) and os.path.getsize(path):
+        with open(path, newline="", encoding="utf-8") as f:
+            rows = [r for r in csv.DictReader(f) if r.get("date_utc")]
+    # one row per utc date: a rerun for the same day replaces it instead of adding a twin
+    rows = [r for r in rows if r["date_utc"] != row["date_utc"]] + [row]
+    rows.sort(key=lambda r: r["date_utc"])
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=SUMMARY_FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def main(argv: list[str] | None = None) -> int:

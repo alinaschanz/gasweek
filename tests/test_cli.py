@@ -25,11 +25,16 @@ def test_table_svg_csv_and_summary(monkeypatch, tmp_path, capsys):
     assert svg_path.read_text(encoding="utf-8").startswith("<svg")
     with open(csv_path, encoding="utf-8") as f:
         assert sum(1 for _ in f) == 900 + 1
-    # a second append keeps a single header
+    # a rerun for the same day replaces the row; another day adds one, sorted by date
     assert cli.main(["--hours", "3", "--summary-append", str(sum_path), "--quiet"]) == 0
     with open(sum_path, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
-    assert len(rows) == 2 and rows[0]["blocks"] == "900" and rows[0]["cheapest_hour_utc"] != ""
+    assert len(rows) == 1 and rows[0]["blocks"] == "900" and rows[0]["cheapest_hour_utc"] != ""
+    earlier = dict(cli.summarize(fake_rows()), to_ts=fake_rows()[0].timestamp - 86400)
+    cli.append_summary(str(sum_path), earlier)
+    with open(sum_path, encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert [r["date_utc"] for r in rows] == sorted(r["date_utc"] for r in rows) and len(rows) == 2
 
 
 def test_json_output(monkeypatch, capsys):
