@@ -5,6 +5,8 @@ versions follow [semver](https://semver.org/) as far as a command line tool has 
 
 ## [unreleased]
 
+- a pypi workflow: trusted publishing on a release, switched on by a repository variable
+
 - the chart grows a third panel with the blob base fee when the rows carry it
 
 - `--tips`: p10/p50/p90 priority fees per block from `eth_feeHistory` reward percentiles; a `tip p50` column per hour, three csv columns
