@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from gasweek import fees, stats, svg
 from gasweek.fees import BlockFee, interpolate, parse_page, plan_pages
-from gasweek.stats import bar, by_hour, by_weekday, bucket, gwei, median, percentile, summarize
+from gasweek.stats import bar, bucket, by_hour, by_weekday, gwei, median, percentile, summarize
 
 
 def rows_for(hours: int, start_ts: int = 1_757_289_600, fee=lambda i: 1.0):  # start = 2025-09-08 00:00 utc

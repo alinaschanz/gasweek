@@ -28,7 +28,7 @@ def render(rows: list[BlockFee], tz_hours: float = 0.0, title: str | None = None
     start = datetime.fromtimestamp(rows[0].timestamp, tz=timezone.utc)
     end = datetime.fromtimestamp(rows[-1].timestamp, tz=timezone.utc)
     hours_span = (rows[-1].timestamp - rows[0].timestamp) / 3600
-    span = "last %d days" % round(hours_span / 24) if hours_span >= 47 else "last %d hours" % round(hours_span)
+    span = f"last {round(hours_span / 24)} days" if hours_span >= 47 else f"last {round(hours_span)} hours"
     out.append(f"<text x='24' y='34' font-size='20' fill='{INK}'>{_esc(title or 'ethereum base fee, ' + span)}</text>")
     out.append(f"<text x='24' y='54' font-size='12' fill='{MUTED}'>{start:%Y-%m-%d %H:%M} to {end:%Y-%m-%d %H:%M} utc, "
                f"{len(rows):,} blocks, median {gwei(median([r.base_fee_gwei for r in rows]))} gwei</text>")
@@ -69,7 +69,8 @@ def render(rows: list[BlockFee], tz_hours: float = 0.0, title: str | None = None
     out.append(f"<polygon points='{upper} {lower}' fill='{BAND}' opacity='0.6'/>")
     line = " ".join(f"{xx(t):.1f},{yy(median(v)):.1f}" for t, v in buckets)
     out.append(f"<polyline points='{line}' fill='none' stroke='{ACCENT}' stroke-width='1.8'/>")
-    out.append(f"<text x='{x1}' y='{y0 - 8}' font-size='11' text-anchor='end' fill='{MUTED}'>gwei, log scale, median of 30 min with p25 to p75 band</text>")
+    out.append(f"<text x='{x1}' y='{y0 - 8}' font-size='11' text-anchor='end' fill='{MUTED}'>"
+               "gwei, log scale, median of 30 min with p25 to p75 band</text>")
 
     # panel 2: hour of day
     hx0, hx1, hy0, hy1 = 64, W - 24, 360, 470
@@ -89,11 +90,14 @@ def render(rows: list[BlockFee], tz_hours: float = 0.0, title: str | None = None
         out.append(f"<rect x='{x:.1f}' y='{hy1 - bar_h:.1f}' width='{slot - 4:.1f}' height='{bar_h:.1f}' fill='{fill}'/>")
         out.append(f"<text x='{x + (slot - 4) / 2:.1f}' y='{hy1 + 14}' font-size='10' text-anchor='middle' fill='{MUTED}'>{h:02d}</text>")
         if h in (cheapest, priciest):
-            out.append(f"<text x='{x + (slot - 4) / 2:.1f}' y='{hy1 - bar_h - 4:.1f}' font-size='10' text-anchor='middle' fill='{INK}'>{gwei(v)}</text>")
+            out.append(f"<text x='{x + (slot - 4) / 2:.1f}' y='{hy1 - bar_h - 4:.1f}' font-size='10' text-anchor='middle' "
+                       f"fill='{INK}'>{gwei(v)}</text>")
     if cheapest is not None and priciest is not None and hours[cheapest] > 0:
         ratio = hours[priciest] / hours[cheapest]
         out.append(f"<text x='{hx1}' y='{hy0 - 12}' font-size='12' text-anchor='end' fill='{MUTED}'>"
-                   f"cheapest {cheapest:02d}:00 ({gwei(hours[cheapest])}), priciest {priciest:02d}:00 ({gwei(hours[priciest])}), {ratio:.1f}x apart</text>")
-    out.append(f"<text x='24' y='{H - 12}' font-size='11' fill='{MUTED}'>{_esc(source or 'source: eth_feeHistory from a public rpc, github.com/alinaschanz/gasweek')}</text>")
+                   f"cheapest {cheapest:02d}:00 ({gwei(hours[cheapest])}), priciest {priciest:02d}:00 "
+                   f"({gwei(hours[priciest])}), {ratio:.1f}x apart</text>")
+    credit = source or "source: eth_feeHistory from a public rpc, github.com/alinaschanz/gasweek"
+    out.append(f"<text x='24' y='{H - 12}' font-size='11' fill='{MUTED}'>{_esc(credit)}</text>")
     out.append("</svg>")
     return "\n".join(out)

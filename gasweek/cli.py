@@ -38,9 +38,9 @@ def report(summary: dict, tz_hours: float, hours_bins: dict[int, list[float]]) -
     lines = [
         f"ethereum base fee, {summary['blocks']:,} blocks ({summary['first_block']:,} to {summary['last_block']:,}), "
         f"{frm:%Y-%m-%d %H:%M} to {to:%Y-%m-%d %H:%M} utc",
-        f"overall  min {gwei(summary['min'])}  p25 {gwei(summary['p25'])}  median {gwei(summary['median'])}  "
-        f"p75 {gwei(summary['p75'])}  p90 {gwei(summary['p90'])}  max {gwei(summary['max'])} gwei"
-        + (f"  |  blob median {gwei(summary['blob_median'])} gwei" if summary["blob_median"] is not None else ""),
+        (f"overall  min {gwei(summary['min'])}  p25 {gwei(summary['p25'])}  median {gwei(summary['median'])}  "
+         f"p75 {gwei(summary['p75'])}  p90 {gwei(summary['p90'])}  max {gwei(summary['max'])} gwei"
+         + (f"  |  blob median {gwei(summary['blob_median'])} gwei" if summary["blob_median"] is not None else "")),
         f"blocks were {summary['gas_used_ratio_mean'] * 100:.0f}% full on average",
         "",
         f"hour ({tz})  median     p25     p75",

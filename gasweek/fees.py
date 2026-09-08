@@ -85,7 +85,7 @@ def fetch(rpc: Rpc, blocks: int, latest: int | None = None, workers: int = 4) ->
     anchor_blocks = sorted({rows[0]["number"], rows[-1]["number"], *(newest - count + 1 for newest, count in pages)})
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         stamps = list(pool.map(rpc.block_timestamp, anchor_blocks))
-    anchors = dict(zip(anchor_blocks, stamps))
+    anchors = dict(zip(anchor_blocks, stamps, strict=True))
     return [
         BlockFee(
             number=r["number"], timestamp=interpolate(anchors, r["number"]), base_fee_gwei=r["base_fee_gwei"],

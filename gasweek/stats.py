@@ -96,5 +96,5 @@ def gwei(v: float | None) -> str:
 
 
 def bar(value: float, top: float, width: int = 24) -> str:
-    n = 0 if top <= 0 else int(round(width * value / top))
+    n = 0 if top <= 0 else round(width * value / top)
     return "#" * max(n, 1 if value > 0 else 0)
