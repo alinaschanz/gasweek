@@ -5,6 +5,8 @@ versions follow [semver](https://semver.org/) as far as a command line tool has 
 
 ## [unreleased]
 
+- `--tips`: p10/p50/p90 priority fees per block from `eth_feeHistory` reward percentiles; a `tip p50` column per hour, three csv columns
+
 ## [0.1.0] - 2026-09-08
 
 first cut: base fee by hour of day over the last week, table, svg and a daily dataset.

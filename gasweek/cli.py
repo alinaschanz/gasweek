@@ -17,6 +17,7 @@ from .svg import render
 SUMMARY_FIELDS = (
     "date_utc", "blocks", "first_block", "last_block", "min_gwei", "p25_gwei", "median_gwei", "p75_gwei", "p90_gwei",
     "max_gwei", "cheapest_hour_utc", "priciest_hour_utc", "gas_used_ratio_mean", "blob_median_gwei",
+    "tip_p10_gwei", "tip_p50_gwei", "tip_p90_gwei",
 )
 
 
@@ -42,16 +43,23 @@ def report(summary: dict, tz_hours: float, hours_bins: dict[int, list[float]]) -
          f"p75 {gwei(summary['p75'])}  p90 {gwei(summary['p90'])}  max {gwei(summary['max'])} gwei"
          + (f"  |  blob median {gwei(summary['blob_median'])} gwei" if summary["blob_median"] is not None else "")),
         f"blocks were {summary['gas_used_ratio_mean'] * 100:.0f}% full on average",
-        "",
-        f"hour ({tz})  median     p25     p75",
     ]
+    tips = summary.get("tips")
+    if tips:
+        lines.append(f"priority fees paid: p10 {gwei(tips['p10'])}  p50 {gwei(tips['p50'])}  p90 {gwei(tips['p90'])} gwei "
+                     "(medians over the blocks)")
+    tip_col = "  tip p50" if tips else ""
+    lines += ["", f"hour ({tz})  median     p25     p75{tip_col}"]
     hours = summary["hours"]
+    tips_hours = summary.get("tips_hours") or {}
     top = max(hours.values()) if hours else 1
     for h in range(24):
         v = hours_bins.get(h) or []
         if not v:
             continue
-        lines.append(f"{h:02d}:00      {gwei(hours[h]):>7} {gwei(percentile(v, 25)):>7} {gwei(percentile(v, 75)):>7}  {bar(hours[h], top)}")
+        tip_text = f" {gwei(tips_hours[h]):>7}" if tips and h in tips_hours else ("        " if tips else "")
+        lines.append(f"{h:02d}:00      {gwei(hours[h]):>7} {gwei(percentile(v, 25)):>7} {gwei(percentile(v, 75)):>7}"
+                     f"{tip_text}  {bar(hours[h], top)}")
     if summary["cheapest_hour"] is not None:
         c, p = summary["cheapest_hour"], summary["priciest_hour"]
         ratio = hours[p] / hours[c] if hours[c] else float("inf")
@@ -78,6 +86,9 @@ def append_summary(path: str, summary: dict) -> None:
         "cheapest_hour_utc": summary["cheapest_hour"], "priciest_hour_utc": summary["priciest_hour"],
         "gas_used_ratio_mean": f"{summary['gas_used_ratio_mean']:.4f}",
         "blob_median_gwei": "" if summary["blob_median"] is None else f"{summary['blob_median']:.6g}",
+        "tip_p10_gwei": f"{summary['tips']['p10']:.6g}" if summary.get("tips") else "",
+        "tip_p50_gwei": f"{summary['tips']['p50']:.6g}" if summary.get("tips") else "",
+        "tip_p90_gwei": f"{summary['tips']['p90']:.6g}" if summary.get("tips") else "",
     }
     rows: list[dict] = []
     if os.path.exists(path) and os.path.getsize(path):
@@ -101,6 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true", help="print the summary as json instead of the table")
     ap.add_argument("--summary-append", metavar="PATH", help="append one summary row to a csv (used by the daily workflow)")
     ap.add_argument("--rpc", action="append", metavar="URL", help="json-rpc endpoint (repeatable, tried in order)")
+    ap.add_argument("--tips", action="store_true", help="also the priority fees people paid (p10/p50/p90 per block, heavier answers)")
     ap.add_argument("--quiet", action="store_true", help="no table on stdout")
     ap.add_argument("--version", action="version", version=f"gasweek {__version__}")
     args = ap.parse_args(argv)
@@ -112,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     blocks = max(1, int(args.hours * BLOCKS_PER_HOUR))
     try:
-        rows = fetch(Rpc(args.rpc) if args.rpc else Rpc(), blocks)
+        rows = fetch(Rpc(args.rpc) if args.rpc else Rpc(), blocks, tips=args.tips)
     except (RpcError, RpcUnavailable) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -124,10 +136,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
-            w.writerow(["block", "timestamp", "base_fee_gwei", "gas_used_ratio", "blob_fee_gwei"])
+            w.writerow(["block", "timestamp", "base_fee_gwei", "gas_used_ratio", "blob_fee_gwei",
+                        "tip_p10_gwei", "tip_p50_gwei", "tip_p90_gwei"])
             for r in rows:
+                tips = r.tips_gwei or ("", "", "")
                 w.writerow([r.number, r.timestamp, f"{r.base_fee_gwei:.9g}", f"{r.gas_used_ratio:.4f}",
-                            "" if r.blob_fee_gwei is None else f"{r.blob_fee_gwei:.9g}"])
+                            "" if r.blob_fee_gwei is None else f"{r.blob_fee_gwei:.9g}",
+                            *[("" if t == "" else f"{t:.9g}") for t in tips]])
     if args.svg:
         with open(args.svg, "w", encoding="utf-8") as f:
             f.write(render(rows, tz_hours))

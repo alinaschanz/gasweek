@@ -60,6 +60,15 @@ def summarize(rows: list[BlockFee], tz_hours: float = 0.0) -> dict:
     hours = {h: median(v) for h, v in by_hour(rows, tz_hours).items() if v}
     days = {d: median(v) for d, v in by_weekday(rows, tz_hours).items() if v}
     blobs = [r.blob_fee_gwei for r in rows if r.blob_fee_gwei is not None]
+    tipped = [r.tips_gwei for r in rows if r.tips_gwei is not None]
+    tips = None
+    if tipped:
+        tips = {"p10": median([t[0] for t in tipped]), "p50": median([t[1] for t in tipped]), "p90": median([t[2] for t in tipped])}
+    tips_by_hour = {}
+    for r in rows:
+        if r.tips_gwei is not None:
+            tips_by_hour.setdefault(local_time(r.timestamp, tz_hours).hour, []).append(r.tips_gwei[1])
+    tips_hours = {h: median(v) for h, v in tips_by_hour.items()}
     cheapest = min(hours, key=hours.get) if hours else None
     priciest = max(hours, key=hours.get) if hours else None
     return {
@@ -76,6 +85,8 @@ def summarize(rows: list[BlockFee], tz_hours: float = 0.0) -> dict:
         "max": max(fees),
         "gas_used_ratio_mean": sum(r.gas_used_ratio for r in rows) / len(rows),
         "blob_median": median(blobs) if blobs else None,
+        "tips": tips,
+        "tips_hours": tips_hours,
         "hours": hours,
         "weekdays": days,
         "cheapest_hour": cheapest,

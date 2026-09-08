@@ -46,6 +46,23 @@ def test_parse_page_drops_the_predicted_next_block():
     assert parse_page({"oldestBlock": "0x1", "baseFeePerGas": ["0x1", "0x1"], "gasUsedRatio": [0.1]})[0]["blob_fee_gwei"] is None
 
 
+def test_parse_page_reads_priority_fee_percentiles():
+    page = {"oldestBlock": "0x10", "baseFeePerGas": ["0x1", "0x1", "0x1"], "gasUsedRatio": [0.5, 0.5],
+            "reward": [["0x3b9aca00", "0x77359400", "0xb2d05e00"], ["0x0", "0x0", "0x0"]]}
+    rows = parse_page(page)
+    assert rows[0]["tips_gwei"] == (1.0, 2.0, 3.0) and rows[1]["tips_gwei"] == (0.0, 0.0, 0.0)
+    assert parse_page({"oldestBlock": "0x1", "baseFeePerGas": ["0x1", "0x1"], "gasUsedRatio": [0.1]})[0]["tips_gwei"] is None
+
+
+def test_summary_carries_tips_when_present():
+    rows = rows_for(2)
+    rows = [BlockFee(number=r.number, timestamp=r.timestamp, base_fee_gwei=r.base_fee_gwei, gas_used_ratio=r.gas_used_ratio,
+                     tips_gwei=(0.1, 0.5, 2.0)) for r in rows]
+    s = summarize(rows)
+    assert s["tips"] == {"p10": 0.1, "p50": 0.5, "p90": 2.0} and s["tips_hours"] == {0: 0.5, 1: 0.5}
+    assert summarize(rows_for(1))["tips"] is None
+
+
 def test_hour_bins_follow_the_timezone():
     rows = rows_for(2)  # 00:00-02:00 utc
     utc = by_hour(rows)
@@ -108,5 +125,8 @@ def test_fetch_uses_pages_and_anchors(monkeypatch):
     rows = fees.fetch(FakeRpc(), 2048, workers=1)
     assert len(rows) == 2048 and rows[0].number == 0 and rows[-1].number == 2047
     assert [p[:2] for m, p in calls if m == "eth_feeHistory"] == [["0x400", "0x7ff"], ["0x400", "0x3ff"]]
+    assert all(p[2] == [] for m, p in calls if m == "eth_feeHistory")
+    fees.fetch(FakeRpc(), 10, workers=1, tips=True)
+    assert calls[-1][1][2] == [10, 50, 90]
     assert rows[1000].timestamp == 1_000_000 + 1000 * 12  # interpolation lands on the real 12 s grid
     assert stats.median([r.base_fee_gwei for r in rows]) == 1.0

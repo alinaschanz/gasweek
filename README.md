@@ -81,8 +81,13 @@ gasweek --svg fees.svg               # the chart
 gasweek --csv blocks.csv             # every block: number, timestamp, base fee, gas used ratio, blob fee
 gasweek --json                       # the summary as json
 gasweek --summary-append daily.csv   # one row per run, header written once
+gasweek --tips                       # plus the priority fees people actually paid, p10/p50/p90 per block
 gasweek --rpc https://your.node      # your own endpoint first
 ```
+
+`--tips` asks `eth_feeHistory` for reward percentiles; the table gets a `tip p50` column per hour and
+the csv three tip columns, which answers "what do i set as priority fee at this hour" without a second
+tool. the answers are bigger, so a full week takes about twice as long.
 
 a full week is 50,400 blocks, fetched as 50 pages of 1024 in parallel; it takes a minute
 or two on a public node.

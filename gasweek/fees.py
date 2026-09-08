@@ -22,6 +22,7 @@ class BlockFee:
     base_fee_gwei: float
     gas_used_ratio: float
     blob_fee_gwei: float | None = None
+    tips_gwei: tuple[float, float, float] | None = None  # p10, p50, p90 of the priority fees paid in the block
 
 
 def plan_pages(latest: int, blocks: int, page: int = PAGE) -> list[tuple[int, int]]:
@@ -54,6 +55,9 @@ def interpolate(anchors: dict[int, int], number: int) -> int:
     return anchors[b2] - 12 * (b2 - number)
 
 
+TIP_PERCENTILES = (10, 50, 90)
+
+
 def parse_page(result: dict) -> list[dict]:
     """rows for one eth_feeHistory answer (the last baseFeePerGas entry is the *next* block, dropped)."""
     oldest = int(result["oldestBlock"], 16)
@@ -61,23 +65,30 @@ def parse_page(result: dict) -> list[dict]:
     used = [float(x) for x in result.get("gasUsedRatio") or []]
     blob = result.get("baseFeePerBlobGas")
     blob_fees = [int(x, 16) for x in blob] if blob else None
+    reward = result.get("reward") or []
     rows = []
     for i in range(len(used)):
+        tips = None
+        if i < len(reward) and reward[i] and len(reward[i]) >= 3:
+            tips = tuple(int(x, 16) / 1e9 for x in reward[i][:3])
         rows.append({
             "number": oldest + i,
             "base_fee_gwei": base[i] / 1e9,
             "gas_used_ratio": used[i],
             "blob_fee_gwei": (blob_fees[i] / 1e9) if blob_fees and i < len(blob_fees) else None,
+            "tips_gwei": tips,
         })
     return rows
 
 
-def fetch(rpc: Rpc, blocks: int, latest: int | None = None, workers: int = 4) -> list[BlockFee]:
+def fetch(rpc: Rpc, blocks: int, latest: int | None = None, workers: int = 4, tips: bool = False) -> list[BlockFee]:
+    """with tips=True the node also returns the p10/p50/p90 priority fees paid in every block (a heavier answer)."""
     latest = rpc.block_number() if latest is None else latest
     pages = plan_pages(latest, blocks)
+    percentiles = list(TIP_PERCENTILES) if tips else []
     rows: list[dict] = []
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        for result in pool.map(lambda page: rpc.call("eth_feeHistory", [hex(page[1]), hex(page[0]), []]), pages):
+        for result in pool.map(lambda page: rpc.call("eth_feeHistory", [hex(page[1]), hex(page[0]), percentiles]), pages):
             rows.extend(parse_page(result))
     rows.sort(key=lambda r: r["number"])
     if not rows:
@@ -89,7 +100,7 @@ def fetch(rpc: Rpc, blocks: int, latest: int | None = None, workers: int = 4) ->
     return [
         BlockFee(
             number=r["number"], timestamp=interpolate(anchors, r["number"]), base_fee_gwei=r["base_fee_gwei"],
-            gas_used_ratio=r["gas_used_ratio"], blob_fee_gwei=r["blob_fee_gwei"],
+            gas_used_ratio=r["gas_used_ratio"], blob_fee_gwei=r["blob_fee_gwei"], tips_gwei=r.get("tips_gwei"),
         )
         for r in rows
     ]
