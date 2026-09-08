@@ -4,6 +4,7 @@
 [![daily snapshot](https://github.com/alinaschanz/gasweek/actions/workflows/daily.yml/badge.svg)](https://github.com/alinaschanz/gasweek/actions/workflows/daily.yml)
 ![python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776ab)
 ![license mit](https://img.shields.io/badge/license-MIT-2b7a74)
+[![release](https://img.shields.io/github/v/release/alinaschanz/gasweek?color=2b7a74)](https://github.com/alinaschanz/gasweek/releases)
 
 when is ethereum cheapest? the base fee of every block in the last week, binned by hour
 of day and by weekday, as a table and as an svg. from `eth_feeHistory` on a public rpc,
