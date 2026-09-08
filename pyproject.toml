@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gasweek"
+version = "0.1.0"
+description = "when is ethereum cheapest? base fee by hour of day over the last week, from a public rpc. text table and svg chart, no keys."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Alina Schanz" }]
+keywords = ["ethereum", "gas", "eip-1559", "base-fee", "cli", "svg"]
+classifiers = [
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/alinaschanz/gasweek"
+Author = "https://alinaschanz.life"
+
+[project.scripts]
+gasweek = "gasweek.cli:main"
+
+[tool.setuptools]
+packages = ["gasweek"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py310"
