@@ -1,0 +1,32 @@
+name: daily snapshot
+
+# one summary row per day into data/daily.csv and a fresh 7 day chart for the readme.
+# no keys: everything comes from a public json-rpc endpoint.
+
+on:
+  schedule:
+    - cron: "17 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: last 24 hours -> one row
+        run: python -m gasweek --hours 24 --summary-append data/daily.csv --quiet
+      - name: last 7 days -> chart
+        run: python -m gasweek --hours 168 --svg data/last-7d.svg --quiet
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/daily.csv data/last-7d.svg
+          git diff --cached --quiet || git commit -m "data: snapshot $(date -u +%F)"
+          git push
